@@ -99,6 +99,12 @@ class ViewManager extends JPanel{
         line.addActionListener(e -> drawEngine.setMode("line"));
         topPanel.add(line);
 
+        // Toggle fill
+        JToggleButton button = new JToggleButton("Fill");
+        button.setBounds(445,0,60,25);
+        button.addItemListener(e -> drawEngine.fillState(button.isSelected()));
+        topPanel.add(button);
+
 
         // (Left) Side Panel
         JPanel sidePanel = new JPanel();
@@ -232,6 +238,7 @@ class DrawEngine extends JPanel implements MouseListener, MouseMotionListener {
 
     private int startX, startY, currentX, currentY;
     private String mode = "pencil"; // Intital mode state
+    private boolean bStat = false;
     private Color currentColor = Color.blue; // Initital colour
     private int strokeWidth = 5; // Initial width (affects all modes)
 
@@ -248,6 +255,7 @@ class DrawEngine extends JPanel implements MouseListener, MouseMotionListener {
 
     // These make it really easy to change the settings
     public void setMode(String m){mode = m;} //Change mode
+    public void fillState(Boolean s){bStat = s;}
     public void setCurrentColor(Color c){currentColor = c;} //Change colour
     public void setStrokeWidth(int w){strokeWidth = w;} // Change width
 
@@ -319,16 +327,18 @@ class DrawEngine extends JPanel implements MouseListener, MouseMotionListener {
         if (dragging && !mode.equals("pencil")){
             Graphics2D previewGraphics = (Graphics2D) g.create(); // Create new graphics "layer"
             previewGraphics.setColor(currentColor);
-            previewGraphics.setStroke(new BasicStroke(3));
+            previewGraphics.setStroke(new BasicStroke(strokeWidth));
             // math
             int x = Math.min(startX, dragX);
             int y = Math.min(startY, dragY);
             int w = Math.abs(dragX - startX);
             int h = Math.abs(dragY - startY);
             // draw the preview
-            if (mode.equals("rect")) {previewGraphics.drawRect(x,y,w,h);}
-            if (mode.equals("oval")) {previewGraphics.drawOval(x,y,w,h);}
-            if (mode.equals("tria")) {previewGraphics.drawPolygon(makeTriangle(dragX,dragY,startX,startY));}
+            if (mode.equals("rect")) {if(bStat){previewGraphics.fillRect(x,y,w,h);}else{previewGraphics.drawRect(x,y,w,h);}}
+            if (mode.equals("oval")) {if(bStat){previewGraphics.fillOval(x,y,w,h);}else{previewGraphics.drawOval(x,y,w,h);}}
+            if (mode.equals("tria")) {if(bStat){previewGraphics.fillPolygon(makeTriangle(dragX,dragY,startX,startY));}else{
+                previewGraphics.drawPolygon(makeTriangle(dragX,dragY,startX,startY));
+            }}
             if (mode.equals("line")) {
                 previewGraphics.setStroke(new BasicStroke(strokeWidth));
                 previewGraphics.drawLine(startX,startY,dragX,dragY);
@@ -387,11 +397,14 @@ class DrawEngine extends JPanel implements MouseListener, MouseMotionListener {
         // Check which mode, then do thing based on that mode.
         // Bunch of alghoritms to make it as easy to use as possible for the user.
         if (mode.equals("rect")) {
-            graphics.fillRect(Math.min(startX, currentX), Math.min(startY, currentY), Math.abs(currentX - startX), Math.abs(currentY - startY));
+            if (bStat){graphics.fillRect(Math.min(startX, currentX), Math.min(startY, currentY), Math.abs(currentX - startX), Math.abs(currentY - startY));}
+            else {graphics.drawRect(Math.min(startX, currentX), Math.min(startY, currentY), Math.abs(currentX - startX), Math.abs(currentY - startY));}
         } else if (mode.equals("oval")) {
-            graphics.fillOval(Math.min(startX, currentX), Math.min(startY, currentY), Math.abs(currentX - startX), Math.abs(currentY - startY));
+            if (bStat){graphics.fillOval(Math.min(startX, currentX), Math.min(startY, currentY), Math.abs(currentX - startX), Math.abs(currentY - startY));}
+            else {graphics.drawOval(Math.min(startX, currentX), Math.min(startY, currentY), Math.abs(currentX - startX), Math.abs(currentY - startY));}
         } else if (mode.equals("tria")) {
-            graphics.fillPolygon(makeTriangle(currentX,currentY,startX,startY)); // Uses helper function makeTriangle
+            if (bStat){graphics.fillPolygon(makeTriangle(currentX,currentY,startX,startY));} // Uses helper function makeTriangle
+            else {graphics.drawPolygon(makeTriangle(currentX,currentY,startX,startY));}
         } else if (mode.equals("line")) {
             graphics.drawLine(startX,startY,currentX,currentY);
         }
